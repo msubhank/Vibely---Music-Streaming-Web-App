@@ -92,7 +92,7 @@
   }
 
   .track-row {
-    @apply grid items-center gap-4 px-4 py-2 rounded-lg hover:bg-elevated/60 transition-colors duration-150 group cursor-pointer;
+    @apply grid items-center gap-4 px-4 py-2 rounded-lg hover:bg-elevated/60 transition-colors duration-150 cursor-pointer;
     grid-template-columns: 16px 4fr 2fr 1fr;
   }
 }
