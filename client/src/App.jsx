@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Sidebar from './components/layout/Sidebar';
 import Player from './components/layout/Player';
+import AuthModal from './components/auth/AuthModal';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Trending from './pages/Trending';
@@ -33,6 +34,9 @@ function App() {
           {/* Persistent player bar */}
           <Player />
         </div>
+
+        {/* Global authentication modal */}
+        <AuthModal />
 
         {/* Global toast notifications */}
         <Toaster

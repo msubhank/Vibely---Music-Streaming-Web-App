@@ -2,7 +2,7 @@ import { Library as LibraryIcon, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Library = () => {
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
 
   if (!user) {
     return (
@@ -12,7 +12,12 @@ const Library = () => {
         <p className="text-muted max-w-xs">
           Sign in to access your playlists, liked songs, and listening history.
         </p>
-        <button className="btn-primary mt-2">Sign In</button>
+        <button
+          onClick={() => openAuthModal('signin')}
+          className="btn-primary mt-2"
+        >
+          Sign In
+        </button>
       </div>
     );
   }

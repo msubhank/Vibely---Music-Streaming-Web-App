@@ -153,11 +153,11 @@ The client will start on `http://localhost:5173`.
   - Zustand audio player store with Howler.js
   - Responsive dark-themed UI (Home, Trending charts, Search)
   - Supabase database schema & Express server foundation
-- [ ] **Phase 2: Authentication & User Accounts** *(Current)*
-  - Login & Signup modals / authentication views
-  - User session state in navigation sidebar
-  - Backend authentication verification routes
-- [ ] **Phase 3: Library, Playlists & Social**
+- [x] **Phase 2: Authentication & User Accounts**
+  - AuthModal with Sign In & Sign Up tabs (Email/Password + Google OAuth)
+  - User session state, avatar, and Sign Out in Sidebar
+  - Backend token verification middleware and profile routes (`/api/auth/me`, `/api/auth/profile`)
+- [ ] **Phase 3: Library, Playlists & Social** *(Current)*
   - Custom user playlists (Create, Add track, Remove track)
   - Liked tracks collection with real-time toggle
   - Recently played history sync

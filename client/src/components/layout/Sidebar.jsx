@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import {
-  Home, Search, Library, Heart, Clock, Plus, Music2, TrendingUp
+  Home, Search, Library, Heart, Clock, Plus, Music2, TrendingUp, LogIn, LogOut
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
 const navLinks = [
@@ -17,7 +18,17 @@ const libraryLinks = [
 ];
 
 const Sidebar = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut, openAuthModal } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to sign out');
+    }
+  };
 
   return (
     <aside className="w-60 shrink-0 h-full bg-surface flex flex-col py-6 px-3 gap-6 overflow-y-auto no-scrollbar">
@@ -68,15 +79,56 @@ const Sidebar = () => {
         ))}
       </div>
 
-      {/* Create playlist */}
-      {user && (
-        <button className="sidebar-link mt-auto">
-          <div className="w-5 h-5 bg-muted-fg rounded flex items-center justify-center">
-            <Plus size={14} className="text-bg" />
-          </div>
-          Create Playlist
-        </button>
-      )}
+      {/* Auth / Profile Footer */}
+      <div className="mt-auto pt-3 border-t border-border flex flex-col gap-2">
+        {user ? (
+          <>
+            <button className="sidebar-link">
+              <div className="w-5 h-5 bg-muted-fg rounded flex items-center justify-center">
+                <Plus size={14} className="text-bg" />
+              </div>
+              Create Playlist
+            </button>
+
+            <div className="flex items-center justify-between p-2 rounded-xl bg-elevated/60">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.display_name || user.email}
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-bold text-xs shrink-0">
+                    {(profile?.display_name || profile?.username || user.email || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">
+                    {profile?.display_name || profile?.username || user.email?.split('@')[0]}
+                  </p>
+                  <p className="text-[10px] text-muted truncate">{user.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                title="Sign Out"
+                className="p-1.5 text-muted hover:text-white hover:bg-elevated rounded-lg transition-colors shrink-0"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={() => openAuthModal('signin')}
+            className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl"
+          >
+            <LogIn size={16} />
+            Sign In
+          </button>
+        )}
+      </div>
     </aside>
   );
 };

@@ -28,14 +28,17 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ── Routes ────────────────────────────────────────────────────────
+import authRouter from './routes/auth.js';
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', app: 'Vibely API', timestamp: new Date().toISOString() });
 });
 
-// TODO (Phase 2): import and use auth, playlists, users routes
-// import authRouter from './routes/auth.js';
+// Phase 2: Auth & User profile routes
+app.use('/api/auth', authRouter);
+
+// TODO (Phase 3): import and use playlists routes
 // import playlistsRouter from './routes/playlists.js';
-// app.use('/api/auth', authRouter);
 // app.use('/api/playlists', playlistsRouter);
 
 // ── 404 & Error handlers ──────────────────────────────────────────
