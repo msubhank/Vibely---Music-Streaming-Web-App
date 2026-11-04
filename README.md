@@ -157,11 +157,13 @@ The client will start on `http://localhost:5173`.
   - AuthModal with Sign In & Sign Up tabs (Email/Password + Google OAuth)
   - User session state, avatar, and Sign Out in Sidebar
   - Backend token verification middleware and profile routes (`/api/auth/me`, `/api/auth/profile`)
-- [ ] **Phase 3: Library, Playlists & Social** *(Current)*
-  - Custom user playlists (Create, Add track, Remove track)
-  - Liked tracks collection with real-time toggle
-  - Recently played history sync
-- [ ] **Phase 4: Optimization & Deployment**
+- [x] **Phase 3: Library, Playlists & Social**
+  - Custom user playlists (Create, Add track, Remove track, Delete playlist)
+  - Liked tracks collection with real-time toggle & Play All
+  - Automatic recently played listening history sync
+  - Dedicated `/playlist/:id` details view & multi-tab `/library` hub
+- [ ] **Phase 4: Optimization, Expanded Catalog & Deployment** *(Current)*
+  - Expand Audius search/discovery limits & optional YouTube music streaming
   - Audio pre-buffering & caching
   - Production build & cloud deployment (Vercel / Render / Supabase)
 
