@@ -1,11 +1,16 @@
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
-  Shuffle, Repeat, Repeat1, ListMusic, Heart
+  Shuffle, Repeat, Repeat1, ListMusic, Heart, Plus
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import usePlayerStore from '../../store/playerStore';
+import useLibraryStore from '../../store/libraryStore';
+import { useAuth } from '../../context/AuthContext';
 import { formatDuration, getArtwork } from '../../services/audiusService';
 
 const Player = () => {
+  const { user, openAuthModal } = useAuth();
+  const { isLiked, toggleLike, openAddToPlaylistModal } = useLibraryStore();
   const {
     currentTrack, isPlaying, isLoading, volume, isMuted,
     shuffle, repeat, progress, currentTime, duration,
@@ -20,6 +25,34 @@ const Player = () => {
       </footer>
     );
   }
+
+  const liked = isLiked(currentTrack.id);
+
+  const handleToggleLike = async () => {
+    if (!user) {
+      openAuthModal('signin');
+      return;
+    }
+    try {
+      const res = await toggleLike(user.id, currentTrack);
+      if (res.liked) {
+        toast.success('Added to Liked Songs ❤️');
+      } else {
+        toast('Removed from Liked Songs', { icon: '💔' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update favorites');
+    }
+  };
+
+  const handleOpenAddToPlaylist = () => {
+    if (!user) {
+      openAuthModal('signin');
+      return;
+    }
+    openAddToPlaylistModal(currentTrack);
+  };
 
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat;
   const artworkUrl = getArtwork(currentTrack, '150x150');
@@ -37,9 +70,22 @@ const Player = () => {
           <p className="text-sm font-semibold text-white truncate">{currentTrack.title}</p>
           <p className="text-xs text-muted truncate">{currentTrack.user?.name}</p>
         </div>
-        <button className="text-muted hover:text-accent transition-colors ml-2 shrink-0">
-          <Heart size={16} />
-        </button>
+        <div className="flex items-center gap-1 ml-2 shrink-0">
+          <button
+            onClick={handleToggleLike}
+            title={liked ? 'Unlike' : 'Like'}
+            className={`p-1.5 rounded-lg transition-colors ${liked ? 'text-accent' : 'text-muted hover:text-white'}`}
+          >
+            <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            onClick={handleOpenAddToPlaylist}
+            title="Add to Playlist"
+            className="p-1.5 rounded-lg text-muted hover:text-white transition-colors"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Controls */}

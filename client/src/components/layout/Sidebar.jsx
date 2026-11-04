@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import {
-  Home, Search, Library, Heart, Clock, Plus, Music2, TrendingUp, LogIn, LogOut
+  Home, Search, Library, Heart, Clock, Plus, Music2, TrendingUp, LogIn, LogOut, Music
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import useLibraryStore from '../../store/libraryStore';
 
 const navLinks = [
   { to: '/', icon: Home, label: 'Home' },
@@ -19,6 +20,7 @@ const libraryLinks = [
 
 const Sidebar = () => {
   const { user, profile, signOut, openAuthModal } = useAuth();
+  const { playlists, openCreatePlaylistModal } = useLibraryStore();
 
   const handleSignOut = async () => {
     try {
@@ -77,13 +79,37 @@ const Sidebar = () => {
             {label}
           </NavLink>
         ))}
+
+        {/* User Playlists list */}
+        {user && playlists.length > 0 && (
+          <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-border/40 max-h-36 overflow-y-auto no-scrollbar">
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-3 mb-1">
+              Playlists
+            </p>
+            {playlists.map((p) => (
+              <NavLink
+                key={p.id}
+                to={`/playlist/${p.id}`}
+                className={({ isActive }) =>
+                  `sidebar-link py-1.5 text-xs ${isActive ? 'active text-primary' : ''}`
+                }
+              >
+                <Music size={14} className="shrink-0 text-muted" />
+                <span className="truncate">{p.name}</span>
+              </NavLink>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Auth / Profile Footer */}
       <div className="mt-auto pt-3 border-t border-border flex flex-col gap-2">
         {user ? (
           <>
-            <button className="sidebar-link">
+            <button
+              onClick={openCreatePlaylistModal}
+              className="sidebar-link"
+            >
               <div className="w-5 h-5 bg-muted-fg rounded flex items-center justify-center">
                 <Plus size={14} className="text-bg" />
               </div>

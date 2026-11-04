@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
 import { getStreamUrl } from '../services/audiusService';
+import { supabase } from '../services/supabaseClient';
+import useLibraryStore from './libraryStore';
 
 let howlInstance = null;
 
@@ -40,6 +42,13 @@ const usePlayerStore = create((set, get) => ({
       onplay: () => {
         set({ isPlaying: true });
         get()._startProgressTick();
+
+        // Automatically record to listening history if user is logged in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            useLibraryStore.getState().logTrackPlay(session.user.id, track);
+          }
+        });
       },
       onpause: () => set({ isPlaying: false }),
       onend: () => {

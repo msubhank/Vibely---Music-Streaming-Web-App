@@ -29,6 +29,7 @@ app.use(limiter);
 
 // ── Routes ────────────────────────────────────────────────────────
 import authRouter from './routes/auth.js';
+import playlistsRouter from './routes/playlists.js';
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', app: 'Vibely API', timestamp: new Date().toISOString() });
@@ -37,9 +38,8 @@ app.get('/health', (req, res) => {
 // Phase 2: Auth & User profile routes
 app.use('/api/auth', authRouter);
 
-// TODO (Phase 3): import and use playlists routes
-// import playlistsRouter from './routes/playlists.js';
-// app.use('/api/playlists', playlistsRouter);
+// Phase 3: Playlists routes
+app.use('/api/playlists', playlistsRouter);
 
 // ── 404 & Error handlers ──────────────────────────────────────────
 app.use((req, res) => {
