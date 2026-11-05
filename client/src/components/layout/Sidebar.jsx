@@ -33,7 +33,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-60 shrink-0 h-full bg-surface flex flex-col py-6 px-3 gap-6 overflow-y-auto no-scrollbar">
+    <aside className="hidden sm:flex w-60 shrink-0 h-full bg-surface flex-col py-6 px-3 gap-6 overflow-y-auto no-scrollbar">
       {/* Logo */}
       <div className="px-3 mb-2 flex items-center gap-2">
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">

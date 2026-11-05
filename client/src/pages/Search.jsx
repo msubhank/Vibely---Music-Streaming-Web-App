@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { searchTracks, searchArtists } from '../services/audiusService';
 import TrackCard from '../components/music/TrackCard';
@@ -13,6 +14,7 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const { playTrack } = usePlayerStore();
+  const navigate = useNavigate();
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -119,15 +121,23 @@ const Search = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {artists.map((artist) => (
-                  <div key={artist.id} className="card flex flex-col items-center text-center gap-3">
+                  <div
+                    key={artist.id}
+                    onClick={() => navigate(`/artist/${artist.id}`)}
+                    className="card flex flex-col items-center text-center gap-3 cursor-pointer hover:border-primary/50 hover:scale-[1.02] transition-all"
+                  >
                     <img
                       src={getArtwork({ artwork: artist.profile_picture }, '480x480')}
                       alt={artist.name}
-                      className="w-full aspect-square rounded-full object-cover"
+                      className="w-full aspect-square rounded-full object-cover shadow-lg"
                     />
-                    <div>
-                      <p className="font-semibold text-white text-sm truncate w-full">{artist.name}</p>
-                      <p className="text-xs text-muted">{artist.follower_count?.toLocaleString()} followers</p>
+                    <div className="w-full min-w-0">
+                      <p className="font-semibold text-white text-sm truncate w-full group-hover:text-primary transition-colors">
+                        {artist.name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {(artist.follower_count || 0).toLocaleString()} followers
+                      </p>
                     </div>
                   </div>
                 ))}

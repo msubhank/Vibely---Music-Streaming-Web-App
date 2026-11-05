@@ -39,7 +39,7 @@ export const getTrendingTracks = (genre = '', time = 'week') =>
 /**
  * Search for tracks by query string
  */
-export const searchTracks = (query, limit = 20) =>
+export const searchTracks = (query, limit = 50) =>
   apiFetch('/tracks/search', { query, limit });
 
 /**

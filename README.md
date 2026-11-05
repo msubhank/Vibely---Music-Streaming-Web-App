@@ -162,10 +162,14 @@ The client will start on `http://localhost:5173`.
   - Liked tracks collection with real-time toggle & Play All
   - Automatic recently played listening history sync
   - Dedicated `/playlist/:id` details view & multi-tab `/library` hub
-- [ ] **Phase 4: Optimization, Expanded Catalog & Deployment** *(Current)*
-  - Expand Audius search/discovery limits & optional YouTube music streaming
-  - Audio pre-buffering & caching
-  - Production build & cloud deployment (Vercel / Render / Supabase)
+- [x] **Phase 4: Player Enhancements, Expanded Catalog & Polish**
+  - Interactive Queue Drawer panel (reorder, clear upcoming, now-playing indicator)
+  - Expanded search & discovery limits with "Load More" pagination
+  - Dedicated `/artist/:id` profile view with discography, follower counts & bio
+  - Automatic next-track audio pre-buffering for gapless playback
+  - Mobile bottom navigation bar for small screens
+- [ ] **Phase 5: Cloud Deployment & CI/CD** *(Current)*
+  - Production build & cloud hosting (Vercel / Render / Supabase)
 
 ---
 

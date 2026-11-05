@@ -8,11 +8,14 @@ import Player from './components/layout/Player';
 import AuthModal from './components/auth/AuthModal';
 import CreatePlaylistModal from './components/library/CreatePlaylistModal';
 import AddToPlaylistModal from './components/library/AddToPlaylistModal';
+import QueueDrawer from './components/layout/QueueDrawer';
+import MobileNav from './components/layout/MobileNav';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Trending from './pages/Trending';
 import Library from './pages/Library';
 import PlaylistDetail from './pages/PlaylistDetail';
+import ArtistDetail from './pages/ArtistDetail';
 
 function AppLayout() {
   const { user } = useAuth();
@@ -38,17 +41,22 @@ function AppLayout() {
             <Route path="/liked" element={<Library />} />
             <Route path="/history" element={<Library />} />
             <Route path="/playlist/:id" element={<PlaylistDetail />} />
+            <Route path="/artist/:id" element={<ArtistDetail />} />
           </Routes>
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation */}
+      <MobileNav />
+
       {/* Persistent player bar */}
       <Player />
 
-      {/* Global Modals */}
+      {/* Global Modals & Drawers */}
       <AuthModal />
       <CreatePlaylistModal />
       <AddToPlaylistModal />
+      <QueueDrawer />
 
       {/* Global toast notifications */}
       <Toaster

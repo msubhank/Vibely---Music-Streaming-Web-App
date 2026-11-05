@@ -38,6 +38,7 @@ const usePlayerStore = create((set, get) => ({
       volume: get().isMuted ? 0 : get().volume,
       onload: () => {
         set({ duration: howlInstance.duration(), isLoading: false });
+        get()._preloadNextTrack();
       },
       onplay: () => {
         set({ isPlaying: true });
@@ -74,6 +75,22 @@ const usePlayerStore = create((set, get) => ({
       set({ currentTime: current, progress: current / total });
     }, 500);
     set({ _progressInterval: interval });
+  },
+
+  // ── Next Track Preload ─────────────────────────────────
+  _preloadNextTrack: () => {
+    const { queue, queueIndex } = get();
+    if (queueIndex < queue.length - 1) {
+      const nextTrack = queue[queueIndex + 1];
+      if (nextTrack?.id && typeof document !== 'undefined') {
+        const streamUrl = getStreamUrl(nextTrack.id);
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = streamUrl;
+        link.as = 'fetch';
+        document.head.appendChild(link);
+      }
+    }
   },
 
   // ── End of track ───────────────────────────────────────
