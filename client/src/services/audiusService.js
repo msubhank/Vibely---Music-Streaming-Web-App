@@ -131,5 +131,8 @@ export const formatDuration = (seconds) => {
  * Get the best available artwork URL from an Audius track
  */
 export const getArtwork = (track, size = '480x480') => {
+  if (typeof track === 'string') return track;
+  if (typeof track?.artwork === 'string') return track.artwork;
+  if (typeof track?.artwork_url === 'string') return track.artwork_url;
   return track?.artwork?.[size] || track?.artwork?.['150x150'] || '/placeholder-art.png';
 };
