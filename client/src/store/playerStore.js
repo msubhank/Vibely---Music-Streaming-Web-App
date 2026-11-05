@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
 import { getStreamUrl } from '../services/audiusService';
+import { getSaavnTrackById } from '../services/saavnService';
 import { supabase } from '../services/supabaseClient';
 import useLibraryStore from './libraryStore';
 
@@ -23,14 +24,21 @@ const usePlayerStore = create((set, get) => ({
   showQueue: false,
 
   // ── Internal: init Howl ────────────────────────────────
-  _initHowl: (track) => {
+  _initHowl: async (track) => {
     if (howlInstance) {
       howlInstance.unload();
     }
 
     set({ isLoading: true, progress: 0, currentTime: 0 });
 
-    const streamUrl = getStreamUrl(track.id);
+    let streamUrl = track.streamUrl;
+    if (!streamUrl && String(track.id).startsWith('saavn_')) {
+      const saavnTrack = await getSaavnTrackById(track.id);
+      streamUrl = saavnTrack?.streamUrl;
+    }
+    if (!streamUrl) {
+      streamUrl = getStreamUrl(track.id);
+    }
 
     howlInstance = new Howl({
       src: [streamUrl],
@@ -78,17 +86,26 @@ const usePlayerStore = create((set, get) => ({
   },
 
   // ── Next Track Preload ─────────────────────────────────
-  _preloadNextTrack: () => {
+  _preloadNextTrack: async () => {
     const { queue, queueIndex } = get();
     if (queueIndex < queue.length - 1) {
       const nextTrack = queue[queueIndex + 1];
       if (nextTrack?.id && typeof document !== 'undefined') {
-        const streamUrl = getStreamUrl(nextTrack.id);
-        const link = document.createElement('link');
-        link.rel = 'prefetch';
-        link.href = streamUrl;
-        link.as = 'fetch';
-        document.head.appendChild(link);
+        let streamUrl = nextTrack.streamUrl;
+        if (!streamUrl && String(nextTrack.id).startsWith('saavn_')) {
+          const saavnTrack = await getSaavnTrackById(nextTrack.id);
+          streamUrl = saavnTrack?.streamUrl;
+        }
+        if (!streamUrl) {
+          streamUrl = getStreamUrl(nextTrack.id);
+        }
+        if (streamUrl) {
+          const link = document.createElement('link');
+          link.rel = 'prefetch';
+          link.href = streamUrl;
+          link.as = 'fetch';
+          document.head.appendChild(link);
+        }
       }
     }
   },
