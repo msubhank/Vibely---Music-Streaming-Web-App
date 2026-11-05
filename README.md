@@ -1,22 +1,26 @@
 # 🎵 Vibely — Your Music, Your Vibe
 
-Vibely is a modern, full-stack music streaming platform powered by the [Audius](https://audius.co/) API. It delivers seamless, full-track audio playback with a responsive dark-mode UI, playlist management, and user authentication backed by Supabase.
+Vibely is a modern, full-stack music streaming platform powered by a **dual-source audio engine** combining the **JioSaavn Open API** (for 80M+ mainstream global Billboard, Pop, and Hip-Hop hits) and the **Audius** API (for decentralized indie tracks, electronic beats, and remixes). It delivers seamless, 320kbps high-fidelity audio playback with a responsive dark-mode UI, playlist management, queue drawer, and user authentication backed by Supabase.
 
 ---
 
 ## 🚀 Features
 
-- **Decentralized Music Streaming**: Free, uninterrupted full-length track streaming powered by the Audius REST API.
-- **Persistent Player Bar**:
+- **Dual-Source Audio Engine**:
+  - **Global Hits (JioSaavn Open API)**: Instant access to 80M+ mainstream artists (*The Weeknd, Taylor Swift, Drake, Coldplay, Dua Lipa, Billie Eilish, etc.*) with high-bitrate direct MP3/AAC streams (320kbps & 160kbps).
+  - **Indie & Remixes (Audius API)**: Free, uninterrupted streaming of decentralized, electronic, and community-uploaded tracks.
+  - Seamless one-click source switching on Home, Search, and Trending pages.
+- **Persistent Player Bar & Queue Drawer**:
   - Global audio engine powered by **Howler.js** and **Zustand**.
   - Play/pause, track seeking with continuous progress bar.
   - Next/previous navigation, shuffle, and repeat modes (`off`, `all`, `one`).
+  - Next-track background audio pre-buffering for instant transitions.
+  - Slide-out Queue Drawer with live track removal and animated equalizers.
   - Volume slider and one-click mute toggle.
-  - Interactive queue management.
 - **Music Discovery & Search**:
-  - **Home**: Trending tracks with genre pills (*Electronic, Hip-Hop, Pop, Rock, Lo-Fi, etc.*) and time range filters (*Week, Month, All-Time*).
-  - **Trending**: Top 50 ranked charts with animated equalizer indicator for active tracks.
-  - **Search**: Fast search across tracks and artists.
+  - **Home**: Curated category pills (*Top Global Hits, Global Pop, Hip-Hop, EDM, Rock, Chill, Bollywood*) alongside Audius genre filters.
+  - **Trending**: Top 50 ranked charts with live audio playback.
+  - **Search**: Fast unified search across 80M+ tracks and artists with instant chips.
 - **Auth & Cloud Persistence (Supabase)**:
   - User signup/login via Supabase Auth.
   - Profile generation on registration.
