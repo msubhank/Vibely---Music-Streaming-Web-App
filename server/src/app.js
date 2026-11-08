@@ -36,7 +36,7 @@ app.get('/health', (req, res) => {
 });
 
 // Phase 2: Auth & User profile routes
-// app.use('/api/auth', authRouter);
+app.use('/api/auth', authRouter);
 
 // Phase 3: Playlists routes
 app.use('/api/playlists', playlistsRouter);
