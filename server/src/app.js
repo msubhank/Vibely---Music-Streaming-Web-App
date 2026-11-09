@@ -41,6 +41,10 @@ app.use('/api/auth', authRouter);
 // Phase 3: Playlists routes
 app.use('/api/playlists', playlistsRouter);
 
+// YouTube Music & Video routes (Option A: 100M+ songs)
+import youtubeRouter from './routes/youtube.js';
+app.use('/api/youtube', youtubeRouter);
+
 // ── 404 & Error handlers ──────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
