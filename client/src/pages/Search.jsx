@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, X, Globe, Radio, Sparkles } from 'lucide-react';
+import YoutubeIcon from '../components/common/YoutubeIcon';
 import { searchTracks, searchArtists } from '../services/audiusService';
 import { searchSaavnTracks, searchSaavnArtists } from '../services/saavnService';
+import { searchYouTube } from '../services/youtubeService';
 import TrackCard from '../components/music/TrackCard';
 import { getArtwork } from '../services/audiusService';
 import usePlayerStore from '../store/playerStore';
@@ -18,6 +20,8 @@ const QUICK_SEARCH_CHIPS = [
   'Ed Sheeran',
   'Bruno Mars',
   'Eminem',
+  'Anime OST',
+  'Lo-Fi Beats',
 ];
 
 const Search = () => {
@@ -25,7 +29,7 @@ const Search = () => {
   const [tracks, setTracks] = useState([]);
   const [artists, setArtists] = useState([]);
   const [tab, setTab] = useState('tracks');
-  const [source, setSource] = useState('jiosaavn'); // 'jiosaavn' | 'audius'
+  const [source, setSource] = useState('youtube'); // 'youtube' | 'jiosaavn' | 'audius'
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const { playTrack } = usePlayerStore();
@@ -36,7 +40,11 @@ const Search = () => {
     setLoading(true);
     setSearched(true);
     try {
-      if (musicSource === 'jiosaavn') {
+      if (musicSource === 'youtube') {
+        const results = await searchYouTube(searchQuery, 40);
+        setTracks(results || []);
+        setArtists([]);
+      } else if (musicSource === 'jiosaavn') {
         const [t, a] = await Promise.all([
           searchSaavnTracks(searchQuery, 1, 40),
           searchSaavnArtists(searchQuery, 1, 20),
@@ -87,34 +95,46 @@ const Search = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white">Search</h1>
-          <p className="text-xs text-muted mt-1">Discover tracks, artists, and global hits</p>
+          <p className="text-xs text-muted mt-1">Discover 100M+ songs, official tracks, and indie beats</p>
         </div>
 
-        {/* Music Source Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit">
+        {/* 3-Way Music Source Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => handleSourceChange('youtube')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              source === 'youtube'
+                ? 'bg-red-600 text-white shadow'
+                : 'text-muted hover:text-white'
+            }`}
+          >
+            <YoutubeIcon size={14} />
+            <span>YouTube (100M+ All Songs)</span>
+          </button>
           <button
             type="button"
             onClick={() => handleSourceChange('jiosaavn')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'jiosaavn'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Globe size={14} />
-            <span>Global Hits (80M+)</span>
+            <span>JioSaavn (80M+ 320kbps)</span>
           </button>
           <button
             type="button"
             onClick={() => handleSourceChange('audius')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'audius'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Radio size={14} />
-            <span>Indie & Remixes</span>
+            <span>Audius (Indie)</span>
           </button>
         </div>
       </div>
@@ -130,9 +150,11 @@ const Search = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={
-            source === 'jiosaavn'
-              ? 'Search any mainstream song, album, or artist (e.g. The Weeknd, Drake, Coldplay)...'
-              : 'Search indie tracks, remixes, and beats on Audius...'
+            source === 'youtube'
+              ? 'Search any song in the world (The Weeknd, Taylor Swift, covers, anime OST, remixes)...'
+              : source === 'jiosaavn'
+              ? 'Search mainstream studio audio (320kbps)...'
+              : 'Search decentralized indie tracks on Audius...'
           }
           className="w-full bg-elevated border border-border rounded-full py-3.5 pl-11 pr-12 text-sm text-white placeholder-muted focus:outline-none focus:border-primary transition-colors shadow-inner"
         />
@@ -154,8 +176,10 @@ const Search = () => {
           </div>
           <p className="text-lg text-white font-bold">Find your next favorite track</p>
           <p className="text-muted text-xs mt-1 max-w-sm mb-6">
-            {source === 'jiosaavn'
-              ? 'Search through 80+ million high-quality global hits from top artists around the world.'
+            {source === 'youtube'
+              ? 'Search across YouTube Music’s 100M+ catalog — every single song, album, cover, and live concert.'
+              : source === 'jiosaavn'
+              ? 'Search 80M+ high-quality studio songs with 320kbps direct playback.'
               : 'Search decentralized, community-uploaded tracks and electronic remixes.'}
           </p>
 
@@ -183,22 +207,34 @@ const Search = () => {
         <>
           {/* Tabs */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-1 bg-elevated rounded-lg p-1 w-fit">
-              {['tracks', 'artists'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`px-4 py-1.5 rounded-md text-sm font-semibold capitalize transition-all ${
-                    tab === t ? 'bg-surface text-white shadow' : 'text-muted hover:text-white'
-                  }`}
-                >
-                  {t} {t === 'tracks' ? `(${tracks.length})` : `(${artists.length})`}
-                </button>
-              ))}
-            </div>
+            {source === 'youtube' ? (
+              <span className="text-sm font-bold text-white flex items-center gap-2">
+                <YoutubeIcon size={16} className="text-red-500" />
+                <span>Found {tracks.length} Tracks on YouTube Music</span>
+              </span>
+            ) : (
+              <div className="flex gap-1 bg-elevated rounded-lg p-1 w-fit">
+                {['tracks', 'artists'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`px-4 py-1.5 rounded-md text-sm font-semibold capitalize transition-all ${
+                      tab === t ? 'bg-surface text-white shadow' : 'text-muted hover:text-white'
+                    }`}
+                  >
+                    {t} {t === 'tracks' ? `(${tracks.length})` : `(${artists.length})`}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <span className="text-xs text-muted">
-              Source: {source === 'jiosaavn' ? 'JioSaavn Global' : 'Audius Indie'}
+              Source:{' '}
+              {source === 'youtube'
+                ? 'YouTube 100M+'
+                : source === 'jiosaavn'
+                ? 'JioSaavn 80M+'
+                : 'Audius Indie'}
             </span>
           </div>
 
@@ -212,12 +248,12 @@ const Search = () => {
                 </div>
               ))}
             </div>
-          ) : tab === 'tracks' ? (
+          ) : tab === 'tracks' || source === 'youtube' ? (
             tracks.length === 0 ? (
               <div className="py-16 text-center">
                 <p className="text-muted text-sm">No tracks found for "{query}"</p>
                 <p className="text-xs text-muted-fg mt-1">
-                  Try switching the source to {source === 'jiosaavn' ? 'Indie (Audius)' : 'Global Hits (JioSaavn)'}.
+                  Try switching between YouTube (100M+), JioSaavn, or Audius.
                 </p>
               </div>
             ) : (
@@ -239,7 +275,6 @@ const Search = () => {
                       if (artist.source === 'audius') {
                         navigate(`/artist/${artist.id}`);
                       } else {
-                        // For JioSaavn artists, trigger search on their name
                         setQuery(artist.name);
                         setTab('tracks');
                         executeSearch(artist.name, 'jiosaavn');
