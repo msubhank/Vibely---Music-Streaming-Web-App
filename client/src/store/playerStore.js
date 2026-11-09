@@ -11,6 +11,7 @@ import {
   stopYtVideo,
   seekYtVideo,
   setYtVolume,
+  setYtQuality,
   getYtPlaybackState,
 } from '../services/youtubePlayerBridge';
 import { supabase } from '../services/supabaseClient';
@@ -98,7 +99,8 @@ const usePlayerStore = create((set, get) => ({
       }
       const videoId = track.videoId || track.rawId || String(track.id).replace('yt_', '');
       set({ duration: track.duration || 0 });
-      playYtVideo(videoId);
+      const quality = get().showVideo ? 'hd720' : 'small';
+      playYtVideo(videoId, quality);
       setYtVolume(get().volume, get().isMuted);
       get()._startProgressTick();
     } else {
@@ -361,7 +363,11 @@ const usePlayerStore = create((set, get) => ({
 
   toggleQueue: () => set((s) => ({ showQueue: !s.showQueue })),
 
-  toggleVideo: () => set((s) => ({ showVideo: !s.showVideo })),
+  toggleVideo: () => {
+    const next = !get().showVideo;
+    set({ showVideo: next });
+    setYtQuality(next ? 'hd720' : 'small');
+  },
 
   addToQueue: (track) =>
     set((s) => ({ queue: [...s.queue, track] })),

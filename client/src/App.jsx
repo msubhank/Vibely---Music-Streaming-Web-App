@@ -10,6 +10,7 @@ import CreatePlaylistModal from './components/library/CreatePlaylistModal';
 import AddToPlaylistModal from './components/library/AddToPlaylistModal';
 import QueueDrawer from './components/layout/QueueDrawer';
 import MobileNav from './components/layout/MobileNav';
+import YouTubeFloatingPlayer from './components/player/YouTubeFloatingPlayer';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Trending from './pages/Trending';
@@ -57,6 +58,7 @@ function AppLayout() {
       <CreatePlaylistModal />
       <AddToPlaylistModal />
       <QueueDrawer />
+      <YouTubeFloatingPlayer />
 
       {/* Global toast notifications */}
       <Toaster

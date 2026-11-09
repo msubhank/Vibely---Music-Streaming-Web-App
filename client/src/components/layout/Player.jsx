@@ -17,12 +17,8 @@ const Player = () => {
     shuffle, repeat, progress, currentTime, duration,
     togglePlay, next, prev, seek, setVolume, toggleMute,
     toggleShuffle, toggleRepeat, toggleQueue, showQueue,
-    showVideo, toggleVideo, initYouTube,
+    showVideo, toggleVideo,
   } = usePlayerStore();
-
-  useEffect(() => {
-    initYouTube('vibely-yt-iframe');
-  }, [initYouTube]);
 
   const liked = currentTrack ? isLiked(currentTrack.id) : false;
 
@@ -59,31 +55,8 @@ const Player = () => {
   const isYt = currentTrack?.source === 'youtube';
 
   return (
-    <>
-      {/* Floating Picture-in-Picture / Video Modal for YouTube tracks */}
-      <div
-        className={`fixed z-50 transition-all duration-300 rounded-2xl overflow-hidden shadow-2xl border border-border bg-black ${
-          showVideo && isYt
-            ? 'bottom-24 right-6 w-80 sm:w-96 aspect-video opacity-100 scale-100 pointer-events-auto'
-            : 'bottom-0 right-0 w-px h-px opacity-0 pointer-events-none'
-        }`}
-      >
-        <div className="relative w-full h-full flex items-center justify-center">
-          {showVideo && (
-            <button
-              onClick={toggleVideo}
-              title="Close Video"
-              className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/75 hover:bg-black text-white transition-colors"
-            >
-              <X size={16} />
-            </button>
-          )}
-          <div id="vibely-yt-iframe" className="w-full h-full" />
-        </div>
-      </div>
-
-      <footer className="h-20 bg-surface border-t border-border grid grid-cols-3 items-center px-4 gap-4 shrink-0 relative z-40">
-        {!currentTrack ? (
+    <footer className="h-20 bg-surface border-t border-border grid grid-cols-3 items-center px-4 gap-4 shrink-0 relative z-40">
+      {!currentTrack ? (
           <div className="col-span-3 flex items-center justify-center">
             <p className="text-muted text-sm">No track selected — browse and play something 🎵</p>
           </div>
@@ -239,7 +212,6 @@ const Player = () => {
           </>
         )}
       </footer>
-    </>
   );
 };
 
