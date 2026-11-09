@@ -107,6 +107,12 @@ const TrackCard = ({ track, queue = [], variant = 'card' }) => {
           className="w-full aspect-square object-cover rounded-lg"
         />
 
+        {track.source === 'youtube' && (
+          <span className="absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm text-[10px] font-black text-white px-1.5 py-0.5 rounded shadow">
+            YouTube
+          </span>
+        )}
+
         {/* Quick action buttons on hover */}
         <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
