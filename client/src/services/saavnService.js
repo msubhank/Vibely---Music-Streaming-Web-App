@@ -34,30 +34,47 @@ const fetchWithFallback = async (endpoint, params = {}) => {
 };
 
 /**
- * Extracts the highest quality audio stream URL from JioSaavn downloadUrl array
+ * Extracts all audio stream URLs sorted by quality (highest to lowest) for fallback support
  */
-const getBestStreamUrl = (downloadUrl) => {
-  if (!downloadUrl) return '';
-  if (typeof downloadUrl === 'string') return downloadUrl;
+export const getAllStreamUrls = (downloadUrl) => {
+  if (!downloadUrl) return [];
+  if (typeof downloadUrl === 'string') return [downloadUrl];
 
   if (Array.isArray(downloadUrl) && downloadUrl.length > 0) {
-    // Check for 320kbps, then 160kbps, or the last available item
-    // Note: some forks use .url, others use .link
-    const high = downloadUrl.find((u) => u.quality === '320kbps' || u.quality === '320');
-    if (high?.url || high?.link) return high.url || high.link;
+    const qualityPriority = ['320kbps', '320', '160kbps', '160', '96kbps', '96', '48kbps', '48', '12kbps', '12'];
+    const results = [];
 
-    const med = downloadUrl.find((u) => u.quality === '160kbps' || u.quality === '160');
-    if (med?.url || med?.link) return med.url || med.link;
+    for (const q of qualityPriority) {
+      const match = downloadUrl.find((u) => u.quality === q);
+      const link = match?.url || match?.link;
+      if (link && !results.includes(link)) {
+        results.push(link);
+      }
+    }
 
-    const last = downloadUrl[downloadUrl.length - 1];
-    return last?.url || last?.link || '';
+    for (const item of downloadUrl) {
+      const link = item?.url || item?.link;
+      if (link && !results.includes(link)) {
+        results.push(link);
+      }
+    }
+
+    return results;
   }
 
   if (typeof downloadUrl === 'object') {
-    return downloadUrl['320kbps'] || downloadUrl['160kbps'] || Object.values(downloadUrl)[0] || '';
+    return Object.values(downloadUrl).filter(Boolean);
   }
 
-  return '';
+  return [];
+};
+
+/**
+ * Extracts the highest quality audio stream URL from JioSaavn downloadUrl array
+ */
+const getBestStreamUrl = (downloadUrl) => {
+  const all = getAllStreamUrls(downloadUrl);
+  return all[0] || '';
 };
 
 /**
@@ -117,7 +134,8 @@ export const mapSaavnTrack = (item) => {
   artist = decodeHtmlEntities(artist);
 
   const artworkUrl = getBestArtworkUrl(item.image);
-  const streamUrl = getBestStreamUrl(item.downloadUrl || item.media_url);
+  const streamUrls = getAllStreamUrls(item.downloadUrl || item.media_url);
+  const streamUrl = streamUrls[0] || '';
 
   const albumName = decodeHtmlEntities(
     typeof item.album === 'object' ? item.album?.name || '' : item.album || ''
@@ -129,6 +147,7 @@ export const mapSaavnTrack = (item) => {
     title,
     duration: parseInt(item.duration, 10) || 0,
     streamUrl,
+    streamUrls,
     artwork: {
       '150x150': artworkUrl,
       '480x480': artworkUrl,

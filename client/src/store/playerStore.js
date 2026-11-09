@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
+import toast from 'react-hot-toast';
 import { getStreamUrl } from '../services/audiusService';
 import { getSaavnTrackById } from '../services/saavnService';
 import { supabase } from '../services/supabaseClient';
@@ -31,18 +32,36 @@ const usePlayerStore = create((set, get) => ({
 
     set({ isLoading: true, progress: 0, currentTime: 0 });
 
-    let streamUrl = track.streamUrl;
-    if (!streamUrl && String(track.id).startsWith('saavn_')) {
+    let streamUrls = Array.isArray(track.streamUrls) && track.streamUrls.length > 0
+      ? track.streamUrls
+      : (track.streamUrl ? [track.streamUrl] : []);
+
+    if (streamUrls.length === 0 && String(track.id).startsWith('saavn_')) {
       const saavnTrack = await getSaavnTrackById(track.id);
-      streamUrl = saavnTrack?.streamUrl;
+      streamUrls = Array.isArray(saavnTrack?.streamUrls) && saavnTrack.streamUrls.length > 0
+        ? saavnTrack.streamUrls
+        : (saavnTrack?.streamUrl ? [saavnTrack.streamUrl] : []);
     }
-    if (!streamUrl) {
-      streamUrl = getStreamUrl(track.id);
+
+    if (streamUrls.length === 0) {
+      const audiusUrl = getStreamUrl(track.id);
+      if (audiusUrl) streamUrls = [audiusUrl];
+    }
+
+    if (streamUrls.length === 0) {
+      toast.error(`Stream unavailable for "${track.title}". Skipping to next...`);
+      set({ isLoading: false, isPlaying: false });
+      const { queue } = get();
+      if (queue.length > 1) {
+        get().nextTrack();
+      }
+      return;
     }
 
     howlInstance = new Howl({
-      src: [streamUrl],
+      src: streamUrls,
       html5: true,
+      format: ['mp3', 'aac', 'm4a', 'mp4', 'webm'],
       volume: get().isMuted ? 0 : get().volume,
       onload: () => {
         set({ duration: howlInstance.duration(), isLoading: false });
@@ -66,6 +85,13 @@ const usePlayerStore = create((set, get) => ({
       onloaderror: (_, err) => {
         console.error('Howler load error:', err);
         set({ isLoading: false, isPlaying: false });
+        toast.error(`Playback failed for "${track.title}". Skipping...`);
+        const { queue } = get();
+        if (queue.length > 1) {
+          setTimeout(() => {
+            get().nextTrack();
+          }, 1000);
+        }
       },
     });
 
