@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { getTrendingTracks, formatDuration, getArtwork } from '../services/audiusService';
 import { getSaavnTrending, SAAVN_CATEGORIES } from '../services/saavnService';
+import { getYouTubeTrending, YT_CATEGORIES } from '../services/youtubeService';
 import { TrendingUp, Globe, Radio } from 'lucide-react';
+import YoutubeIcon from '../components/common/YoutubeIcon';
 import usePlayerStore from '../store/playerStore';
 
 const Trending = () => {
-  const [source, setSource] = useState('jiosaavn'); // 'jiosaavn' | 'audius'
+  const [source, setSource] = useState('youtube'); // 'youtube' | 'jiosaavn' | 'audius'
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState('week');
+  const [ytCategory, setYtCategory] = useState('global');
   const [saavnCategory, setSaavnCategory] = useState('global');
   const { playTrack, currentTrack, isPlaying } = usePlayerStore();
 
@@ -16,7 +19,10 @@ const Trending = () => {
     const load = async () => {
       setLoading(true);
       try {
-        if (source === 'jiosaavn') {
+        if (source === 'youtube') {
+          const data = await getYouTubeTrending(ytCategory, 50);
+          setTracks(data || []);
+        } else if (source === 'jiosaavn') {
           const data = await getSaavnTrending(saavnCategory, 50);
           setTracks(data || []);
         } else {
@@ -30,7 +36,7 @@ const Trending = () => {
       }
     };
     load();
-  }, [source, saavnCategory, time]);
+  }, [source, ytCategory, saavnCategory, time]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 animate-fade-in">
@@ -45,38 +51,66 @@ const Trending = () => {
           </div>
         </div>
 
-        {/* Music Source Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit shrink-0">
+        {/* 3-Way Music Source Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit shrink-0 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSource('youtube')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              source === 'youtube'
+                ? 'bg-red-600 text-white shadow'
+                : 'text-muted hover:text-white'
+            }`}
+          >
+            <YoutubeIcon size={14} />
+            <span>YouTube (100M+)</span>
+          </button>
           <button
             type="button"
             onClick={() => setSource('jiosaavn')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'jiosaavn'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Globe size={14} />
-            <span>Global Hits (80M+)</span>
+            <span>JioSaavn (80M+)</span>
           </button>
           <button
             type="button"
             onClick={() => setSource('audius')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'audius'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Radio size={14} />
-            <span>Indie Charts</span>
+            <span>Audius (Indie)</span>
           </button>
         </div>
       </div>
 
       {/* Category or Time Filters */}
       <div className="mb-6 overflow-x-auto no-scrollbar pb-1">
-        {source === 'jiosaavn' ? (
+        {source === 'youtube' ? (
+          <div className="flex gap-2">
+            {YT_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setYtCategory(cat.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all border ${
+                  ytCategory === cat.id
+                    ? 'bg-red-600 border-red-600 text-white shadow'
+                    : 'bg-elevated border-border text-muted-fg hover:text-white'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        ) : source === 'jiosaavn' ? (
           <div className="flex gap-2">
             {SAAVN_CATEGORIES.map((cat) => (
               <button
@@ -119,7 +153,7 @@ const Trending = () => {
         <div className="track-row text-xs text-muted uppercase tracking-wider pb-2 border-b border-border mb-2 font-medium">
           <span>#</span>
           <span>Title</span>
-          <span className="hidden md:block">Album</span>
+          <span className="hidden md:block">Source / Album</span>
           <span className="text-right">Duration</span>
         </div>
 
@@ -176,7 +210,9 @@ const Trending = () => {
                   </div>
 
                   <p className="text-sm text-muted truncate hidden md:block">
-                    {track.album?.album_name || '—'}
+                    {track.source === 'youtube'
+                      ? 'YouTube Music'
+                      : track.album?.album_name || '—'}
                   </p>
                   <p className="text-sm text-muted text-right tabular-nums">
                     {formatDuration(track.duration)}
