@@ -3,10 +3,29 @@ import { Howl } from 'howler';
 import toast from 'react-hot-toast';
 import { getStreamUrl } from '../services/audiusService';
 import { getSaavnTrackById } from '../services/saavnService';
+import {
+  initYouTubePlayer,
+  playYtVideo,
+  pauseYtVideo,
+  resumeYtVideo,
+  stopYtVideo,
+  seekYtVideo,
+  setYtVolume,
+  getYtPlaybackState,
+} from '../services/youtubePlayerBridge';
 import { supabase } from '../services/supabaseClient';
 import useLibraryStore from './libraryStore';
 
 let howlInstance = null;
+
+const isYouTubeTrack = (track) => {
+  if (!track) return false;
+  return (
+    track.source === 'youtube' ||
+    String(track.id).startsWith('yt_') ||
+    Boolean(track.videoId)
+  );
+};
 
 const usePlayerStore = create((set, get) => ({
   // ── State ──────────────────────────────────────────────
@@ -23,14 +42,77 @@ const usePlayerStore = create((set, get) => ({
   duration: 0,      // seconds
   currentTime: 0,   // seconds
   showQueue: false,
+  showVideo: false, // Floating video player toggle
 
-  // ── Internal: init Howl ────────────────────────────────
+  // ── Initialize YouTube Player Bridge ──────────────────
+  initYouTube: (containerId = 'vibely-yt-iframe') => {
+    initYouTubePlayer(containerId, (state, player) => {
+      // YouTube Player States:
+      // -1: unstarted/error, 0: ended, 1: playing, 2: paused, 3: buffering, 5: cued
+      if (state === 1) {
+        // Playing
+        set({
+          isPlaying: true,
+          isLoading: false,
+          duration: player?.getDuration?.() || get().duration,
+        });
+        get()._startProgressTick();
+
+        const track = get().currentTrack;
+        if (track) {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+              useLibraryStore.getState().logTrackPlay(session.user.id, track);
+            }
+          });
+        }
+      } else if (state === 2) {
+        // Paused
+        set({ isPlaying: false });
+      } else if (state === 3) {
+        // Buffering
+        set({ isLoading: true });
+      } else if (state === 0) {
+        // Ended
+        get()._handleEnd();
+      } else if (state === -1) {
+        // Error / Unplayable
+        console.warn('YouTube track unplayable, skipping...');
+        set({ isLoading: false, isPlaying: false });
+        const { queue } = get();
+        if (queue.length > 1) {
+          get().next();
+        }
+      }
+    });
+  },
+
+  // ── Internal: Init Track (Routes to YouTube or Howler) ──
+  _initTrack: async (track) => {
+    set({ isLoading: true, progress: 0, currentTime: 0 });
+
+    if (isYouTubeTrack(track)) {
+      // 1. YouTube Track
+      if (howlInstance) {
+        howlInstance.unload();
+      }
+      const videoId = track.videoId || track.rawId || String(track.id).replace('yt_', '');
+      set({ duration: track.duration || 0 });
+      playYtVideo(videoId);
+      setYtVolume(get().volume, get().isMuted);
+      get()._startProgressTick();
+    } else {
+      // 2. JioSaavn / Audius Track via Howler
+      stopYtVideo();
+      get()._initHowl(track);
+    }
+  },
+
+  // ── Internal: Howler Audio Engine ──────────────────────
   _initHowl: async (track) => {
     if (howlInstance) {
       howlInstance.unload();
     }
-
-    set({ isLoading: true, progress: 0, currentTime: 0 });
 
     let streamUrls = Array.isArray(track.streamUrls) && track.streamUrls.length > 0
       ? track.streamUrls
@@ -53,7 +135,7 @@ const usePlayerStore = create((set, get) => ({
       set({ isLoading: false, isPlaying: false });
       const { queue } = get();
       if (queue.length > 1) {
-        get().nextTrack();
+        get().next();
       }
       return;
     }
@@ -71,7 +153,6 @@ const usePlayerStore = create((set, get) => ({
         set({ isPlaying: true });
         get()._startProgressTick();
 
-        // Automatically record to listening history if user is logged in
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session?.user) {
             useLibraryStore.getState().logTrackPlay(session.user.id, track);
@@ -89,7 +170,7 @@ const usePlayerStore = create((set, get) => ({
         const { queue } = get();
         if (queue.length > 1) {
           setTimeout(() => {
-            get().nextTrack();
+            get().next();
           }, 1000);
         }
       },
@@ -98,16 +179,31 @@ const usePlayerStore = create((set, get) => ({
     howlInstance.play();
   },
 
-  // ── Progress ticker ────────────────────────────────────
+  // ── Unified Progress Ticker ─────────────────────────────
   _progressInterval: null,
   _startProgressTick: () => {
     if (get()._progressInterval) clearInterval(get()._progressInterval);
+
     const interval = setInterval(() => {
-      if (!howlInstance || !howlInstance.playing()) return;
-      const current = howlInstance.seek();
-      const total = howlInstance.duration() || 1;
-      set({ currentTime: current, progress: current / total });
+      const { currentTrack } = get();
+      if (!currentTrack) return;
+
+      if (isYouTubeTrack(currentTrack)) {
+        const { current, duration } = getYtPlaybackState();
+        const total = duration || get().duration || 1;
+        set({
+          currentTime: current,
+          duration: total,
+          progress: total > 0 ? current / total : 0,
+        });
+      } else {
+        if (!howlInstance || !howlInstance.playing()) return;
+        const current = howlInstance.seek();
+        const total = howlInstance.duration() || 1;
+        set({ currentTime: current, progress: current / total });
+      }
     }, 500);
+
     set({ _progressInterval: interval });
   },
 
@@ -116,7 +212,7 @@ const usePlayerStore = create((set, get) => ({
     const { queue, queueIndex } = get();
     if (queueIndex < queue.length - 1) {
       const nextTrack = queue[queueIndex + 1];
-      if (nextTrack?.id && typeof document !== 'undefined') {
+      if (nextTrack?.id && !isYouTubeTrack(nextTrack) && typeof document !== 'undefined') {
         let streamUrl = nextTrack.streamUrl;
         if (!streamUrl && String(nextTrack.id).startsWith('saavn_')) {
           const saavnTrack = await getSaavnTrackById(nextTrack.id);
@@ -136,19 +232,26 @@ const usePlayerStore = create((set, get) => ({
     }
   },
 
-  // ── End of track ───────────────────────────────────────
+  // ── End of Track Handling ──────────────────────────────
   _handleEnd: () => {
-    const { repeat, queue, queueIndex, shuffle } = get();
+    const { repeat, queue, queueIndex, shuffle, currentTrack } = get();
     if (repeat === 'one') {
-      howlInstance.seek(0);
-      howlInstance.play();
+      if (isYouTubeTrack(currentTrack)) {
+        seekYtVideo(0);
+        resumeYtVideo();
+      } else if (howlInstance) {
+        howlInstance.seek(0);
+        howlInstance.play();
+      }
       return;
     }
+
     if (shuffle) {
       const nextIdx = Math.floor(Math.random() * queue.length);
       get().playAtIndex(nextIdx);
       return;
     }
+
     if (queueIndex < queue.length - 1) {
       get().next();
     } else if (repeat === 'all') {
@@ -158,12 +261,12 @@ const usePlayerStore = create((set, get) => ({
     }
   },
 
-  // ── Public Actions ─────────────────────────────────────
+  // ── Public Player Controls ─────────────────────────────
   playTrack: (track, newQueue = null) => {
     const queue = newQueue || [track];
     const idx = queue.findIndex((t) => t.id === track.id);
     set({ currentTrack: track, queue, queueIndex: idx >= 0 ? idx : 0 });
-    get()._initHowl(track);
+    get()._initTrack(track);
   },
 
   playAtIndex: (index) => {
@@ -171,10 +274,24 @@ const usePlayerStore = create((set, get) => ({
     if (index < 0 || index >= queue.length) return;
     const track = queue[index];
     set({ currentTrack: track, queueIndex: index });
-    get()._initHowl(track);
+    get()._initTrack(track);
   },
 
   togglePlay: () => {
+    const { currentTrack, isPlaying } = get();
+    if (!currentTrack) return;
+
+    if (isYouTubeTrack(currentTrack)) {
+      if (isPlaying) {
+        pauseYtVideo();
+        set({ isPlaying: false });
+      } else {
+        resumeYtVideo();
+        set({ isPlaying: true });
+      }
+      return;
+    }
+
     if (!howlInstance) return;
     if (howlInstance.playing()) {
       howlInstance.pause();
@@ -195,23 +312,34 @@ const usePlayerStore = create((set, get) => ({
   },
 
   prev: () => {
-    const { currentTime, queueIndex } = get();
+    const { currentTime, queueIndex, currentTrack } = get();
     if (currentTime > 3) {
-      howlInstance?.seek(0);
+      if (isYouTubeTrack(currentTrack)) {
+        seekYtVideo(0);
+      } else {
+        howlInstance?.seek(0);
+      }
       return;
     }
     if (queueIndex > 0) get().playAtIndex(queueIndex - 1);
   },
 
   seek: (fraction) => {
-    if (!howlInstance) return;
-    const dur = howlInstance.duration();
-    howlInstance.seek(fraction * dur);
-    set({ progress: fraction, currentTime: fraction * dur });
+    const { currentTrack, duration } = get();
+    const dur = duration || currentTrack?.duration || 1;
+    const targetSeconds = fraction * dur;
+
+    if (isYouTubeTrack(currentTrack)) {
+      seekYtVideo(targetSeconds);
+    } else {
+      howlInstance?.seek(targetSeconds);
+    }
+    set({ progress: fraction, currentTime: targetSeconds });
   },
 
   setVolume: (vol) => {
     howlInstance?.volume(vol);
+    setYtVolume(vol, get().isMuted);
     set({ volume: vol, isMuted: vol === 0 });
   },
 
@@ -219,6 +347,7 @@ const usePlayerStore = create((set, get) => ({
     const { isMuted, volume } = get();
     const newMuted = !isMuted;
     howlInstance?.volume(newMuted ? 0 : volume);
+    setYtVolume(volume, newMuted);
     set({ isMuted: newMuted });
   },
 
@@ -231,6 +360,8 @@ const usePlayerStore = create((set, get) => ({
   },
 
   toggleQueue: () => set((s) => ({ showQueue: !s.showQueue })),
+
+  toggleVideo: () => set((s) => ({ showVideo: !s.showVideo })),
 
   addToQueue: (track) =>
     set((s) => ({ queue: [...s.queue, track] })),
