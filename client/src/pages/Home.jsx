@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Globe, Radio, Sparkles, RefreshCw } from 'lucide-react';
+import { Globe, Radio, RefreshCw } from 'lucide-react';
+import YoutubeIcon from '../components/common/YoutubeIcon';
 import { getTrendingTracks, AUDIUS_GENRES } from '../services/audiusService';
 import { getSaavnTrending, SAAVN_CATEGORIES } from '../services/saavnService';
+import { getYouTubeTrending, YT_CATEGORIES } from '../services/youtubeService';
 import TrackCard from '../components/music/TrackCard';
 
 const SkeletonCard = () => (
@@ -13,9 +15,10 @@ const SkeletonCard = () => (
 );
 
 const Home = () => {
-  const [source, setSource] = useState('jiosaavn'); // 'jiosaavn' | 'audius'
+  const [source, setSource] = useState('youtube'); // 'youtube' | 'jiosaavn' | 'audius'
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ytCategory, setYtCategory] = useState('global');
   const [saavnCategory, setSaavnCategory] = useState('global');
   const [genre, setGenre] = useState('All');
   const [time, setTime] = useState('week');
@@ -27,7 +30,10 @@ const Home = () => {
     setError(null);
     setVisibleCount(24);
     try {
-      if (source === 'jiosaavn') {
+      if (source === 'youtube') {
+        const data = await getYouTubeTrending(ytCategory, 50);
+        setTracks(data || []);
+      } else if (source === 'jiosaavn') {
         const data = await getSaavnTrending(saavnCategory, 50);
         setTracks(data || []);
       } else {
@@ -44,7 +50,7 @@ const Home = () => {
 
   useEffect(() => {
     loadTracks();
-  }, [source, saavnCategory, genre, time]);
+  }, [source, ytCategory, saavnCategory, genre, time]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 animate-fade-in">
@@ -55,43 +61,73 @@ const Home = () => {
             Good {getGreeting()} 👋
           </h1>
           <p className="text-muted text-sm">
-            {source === 'jiosaavn'
-              ? '80M+ Billboard, Pop, Hip-Hop & Global Chartbusters'
+            {source === 'youtube'
+              ? '100M+ Songs, Official Tracks, Live Concerts & Music Videos'
+              : source === 'jiosaavn'
+              ? '80M+ Billboard, Pop, Hip-Hop & Studio Chartbusters (320kbps)'
               : 'Decentralized Indie, Electronic & Community Beats'}
           </p>
         </div>
 
-        {/* Music Source Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit shrink-0">
+        {/* 3-Way Music Source Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-elevated rounded-xl border border-border w-fit shrink-0 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSource('youtube')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              source === 'youtube'
+                ? 'bg-red-600 text-white shadow'
+                : 'text-muted hover:text-white'
+            }`}
+          >
+            <YoutubeIcon size={14} />
+            <span>YouTube (100M+)</span>
+          </button>
           <button
             type="button"
             onClick={() => setSource('jiosaavn')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'jiosaavn'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Globe size={14} />
-            <span>Global Hits (80M+)</span>
+            <span>JioSaavn (80M+)</span>
           </button>
           <button
             type="button"
             onClick={() => setSource('audius')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               source === 'audius'
                 ? 'bg-primary text-white shadow'
                 : 'text-muted hover:text-white'
             }`}
           >
             <Radio size={14} />
-            <span>Indie & Remixes</span>
+            <span>Audius (Indie)</span>
           </button>
         </div>
       </div>
 
       {/* Categories / Genre Filters */}
-      {source === 'jiosaavn' ? (
+      {source === 'youtube' ? (
+        <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
+          {YT_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setYtCategory(cat.id)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all duration-200 border ${
+                ytCategory === cat.id
+                  ? 'bg-red-600 border-red-600 text-white shadow-md shadow-red-600/20'
+                  : 'bg-elevated border-border text-muted-fg hover:text-white hover:border-muted'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      ) : source === 'jiosaavn' ? (
         <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
           {SAAVN_CATEGORIES.map((cat) => (
             <button
@@ -152,7 +188,9 @@ const Home = () => {
           <div className="flex items-center gap-2">
             <span className="text-xl">🔥</span>
             <h2 className="text-xl font-bold text-white">
-              {source === 'jiosaavn'
+              {source === 'youtube'
+                ? YT_CATEGORIES.find((c) => c.id === ytCategory)?.label || 'YouTube Music Hits'
+                : source === 'jiosaavn'
                 ? SAAVN_CATEGORIES.find((c) => c.id === saavnCategory)?.label || 'Trending Tracks'
                 : `Trending ${genre === 'All' ? '' : genre} Tracks`}
             </h2>
