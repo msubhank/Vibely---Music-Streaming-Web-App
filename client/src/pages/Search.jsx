@@ -32,6 +32,7 @@ const Search = () => {
   const [source, setSource] = useState('youtube'); // 'youtube' | 'jiosaavn' | 'audius'
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
   const { playTrack } = usePlayerStore();
   const navigate = useNavigate();
 
@@ -39,6 +40,7 @@ const Search = () => {
     if (!searchQuery?.trim()) return;
     setLoading(true);
     setSearched(true);
+    setSearchError('');
     try {
       if (musicSource === 'youtube') {
         const results = await searchYouTube(searchQuery, 40);
@@ -61,6 +63,9 @@ const Search = () => {
       }
     } catch (err) {
       console.error('Search error:', err);
+      setTracks([]);
+      setArtists([]);
+      setSearchError(err.message || 'Search failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -247,6 +252,13 @@ const Search = () => {
                   <div className="skeleton h-3 w-1/2 rounded" />
                 </div>
               ))}
+            </div>
+          ) : searchError ? (
+            <div className="py-16 text-center">
+              <p className="text-sm text-red-400">{searchError}</p>
+              <p className="text-xs text-muted mt-2">
+                Check the deployed frontend&apos;s VITE_API_URL setting and redeploy it.
+              </p>
             </div>
           ) : tab === 'tracks' || source === 'youtube' ? (
             tracks.length === 0 ? (

@@ -2,7 +2,12 @@
 // Unlocks 100M+ songs, covers, live versions, and remixes using YouTube
 // with backend endpoint + client-side Invidious/Piped public fallback.
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const configuredBackendUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, '');
+const BACKEND_URL = configuredBackendUrl
+  ? configuredBackendUrl.replace(/\/api$/i, '')
+  : import.meta.env.DEV
+    ? 'http://localhost:5000'
+    : '';
 
 const PUBLIC_INVIDIOUS_HOSTS = [
   'https://invidious.nerdvpn.de',
@@ -51,20 +56,32 @@ export const formatYtTrack = (item) => {
 export const searchYouTube = async (query, limit = 30) => {
   if (!query || !query.trim()) return [];
 
-  // 1. Try local Express backend first
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/youtube/search?query=${encodeURIComponent(query)}&limit=${limit}`);
-    if (res.ok) {
+  let backendError = null;
+  if (BACKEND_URL) {
+    try {
+      const url = `${BACKEND_URL}/api/youtube/search?query=${encodeURIComponent(query)}&limit=${limit}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`YouTube backend returned HTTP ${res.status}`);
+      }
+
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (!json.success || !Array.isArray(json.data)) {
+        throw new Error('YouTube backend returned an unexpected response.');
+      }
+      if (json.data.length > 0) {
         return json.data;
       }
+    } catch (err) {
+      backendError = err;
+      console.error('YouTube backend search failed:', err);
     }
-  } catch (err) {
-    // Backend might be offline; continue to fallback
+  } else {
+    backendError = new Error('VITE_API_URL is not set for the production frontend.');
+    console.error(backendError.message);
   }
 
-  // 2. Client-side fallback to Invidious public instances
+  let fallbackError = null;
   for (const host of PUBLIC_INVIDIOUS_HOSTS) {
     try {
       const url = `${host}/api/v1/search?q=${encodeURIComponent(query + ' song')}&type=video`;
@@ -74,9 +91,18 @@ export const searchYouTube = async (query, limit = 30) => {
       if (Array.isArray(data) && data.length > 0) {
         return data.slice(0, limit).map(formatYtTrack);
       }
-    } catch {
-      continue;
+    } catch (err) {
+      fallbackError = err;
+      console.warn(`YouTube public search failed at ${host}:`, err);
     }
+  }
+
+  if (backendError || fallbackError) {
+    throw new Error(
+      backendError
+        ? `YouTube search failed: ${backendError.message}`
+        : 'YouTube search is currently unavailable. Please try again later.'
+    );
   }
 
   return [];
@@ -95,21 +121,24 @@ export const YT_CATEGORIES = [
  * Fetch YouTube trending music
  */
 export const getYouTubeTrending = async (category = 'global', limit = 30) => {
-  // 1. Try backend
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/youtube/trending?category=${category}&limit=${limit}`);
-    if (res.ok) {
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/youtube/trending?category=${encodeURIComponent(category)}&limit=${limit}`);
+      if (!res.ok) {
+        throw new Error(`YouTube backend returned HTTP ${res.status}`);
+      }
       const json = await res.json();
       if (json.success && Array.isArray(json.data) && json.data.length > 0) {
         return json.data;
       }
+    } catch (err) {
+      console.error('YouTube backend trending request failed:', err);
     }
-  } catch {
-    // Continue to fallback
+  } else if (!import.meta.env.DEV) {
+    console.error('VITE_API_URL is not set for the production frontend.');
   }
 
   // 2. Fallback to search
   const cat = YT_CATEGORIES.find((c) => c.id === category) || YT_CATEGORIES[0];
   return searchYouTube(cat.query, limit);
 };
-
