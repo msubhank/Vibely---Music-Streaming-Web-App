@@ -150,21 +150,6 @@ npm run dev
 ```
 The client will start on `http://localhost:5173`.
 
-### 5. Production Deployment
-
-When deploying the client separately from the Express server (for example, on
-Vercel and Render), set `VITE_API_URL` in the client hosting provider to the
-public base URL of the deployed server, without a trailing slash. For example:
-
-```env
-VITE_API_URL=https://your-backend-name.onrender.com
-```
-
-Vite embeds this value at build time, so add or update it in the hosting
-provider's environment-variable settings and redeploy the client. Do not use
-`http://localhost:5000` in production. YouTube playback also requires the
-deployed site's origin to be available to the YouTube IFrame Player API.
-
 ---
 
 ## 🗺️ Development Roadmap & Phases
@@ -196,3 +181,4 @@ deployed site's origin to be available to the YouTube IFrame Player API.
 
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).
+

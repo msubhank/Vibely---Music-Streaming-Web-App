@@ -2,9 +2,7 @@
 // Unlocks 100M+ songs, covers, live versions, and remixes using YouTube
 // with backend endpoint + client-side Invidious/Piped public fallback.
 
-const BACKEND_URL =
-  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
-  (import.meta.env.DEV ? 'http://localhost:5000' : '');
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const PUBLIC_INVIDIOUS_HOSTS = [
   'https://invidious.nerdvpn.de',
@@ -53,21 +51,17 @@ export const formatYtTrack = (item) => {
 export const searchYouTube = async (query, limit = 30) => {
   if (!query || !query.trim()) return [];
 
-  // 1. Try the Express backend when configured
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/youtube/search?query=${encodeURIComponent(query)}&limit=${limit}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          return json.data;
-        }
+  // 1. Try local Express backend first
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/youtube/search?query=${encodeURIComponent(query)}&limit=${limit}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data;
       }
-    } catch (err) {
-      console.warn('YouTube backend search failed; trying public instances:', err);
     }
-  } else {
-    console.error('VITE_API_URL is not configured for this production deployment.');
+  } catch (err) {
+    // Backend might be offline; continue to fallback
   }
 
   // 2. Client-side fallback to Invidious public instances
@@ -102,23 +96,20 @@ export const YT_CATEGORIES = [
  */
 export const getYouTubeTrending = async (category = 'global', limit = 30) => {
   // 1. Try backend
-  if (BACKEND_URL) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/youtube/trending?category=${category}&limit=${limit}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          return json.data;
-        }
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/youtube/trending?category=${category}&limit=${limit}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data;
       }
-    } catch (err) {
-      console.warn('YouTube backend trending request failed; trying public instances:', err);
     }
-  } else {
-    console.error('VITE_API_URL is not configured for this production deployment.');
+  } catch {
+    // Continue to fallback
   }
 
   // 2. Fallback to search
   const cat = YT_CATEGORIES.find((c) => c.id === category) || YT_CATEGORIES[0];
   return searchYouTube(cat.query, limit);
 };
+

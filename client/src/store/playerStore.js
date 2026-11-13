@@ -47,7 +47,7 @@ const usePlayerStore = create((set, get) => ({
 
   // ── Initialize YouTube Player Bridge ──────────────────
   initYouTube: (containerId = 'vibely-yt-iframe') => {
-    initYouTubePlayer(containerId, (state, player, errorCode) => {
+    initYouTubePlayer(containerId, (state, player) => {
       // YouTube Player States:
       // -1: unstarted/error, 0: ended, 1: playing, 2: paused, 3: buffering, 5: cued
       if (state === 1) {
@@ -76,28 +76,10 @@ const usePlayerStore = create((set, get) => ({
       } else if (state === 0) {
         // Ended
         get()._handleEnd();
-      } else if (state === 5) {
-        // Cued but not playing, which can happen when autoplay is blocked.
-        const { currentTrack, isLoading } = get();
-        set({ isLoading: false, isPlaying: false });
-        if (isLoading && isYouTubeTrack(currentTrack)) {
-          toast('YouTube is ready. Press Play to start playback.', { icon: '▶️' });
-        }
       } else if (state === -1) {
-        // -1 is YouTube's normal "unstarted" state; only onError provides an error code.
-        if (!errorCode) return;
-
+        // Error / Unplayable
+        console.warn('YouTube track unplayable, skipping...');
         set({ isLoading: false, isPlaying: false });
-        const errorMessages = {
-          2: 'YouTube rejected this video ID.',
-          5: 'YouTube could not play this video in the HTML5 player.',
-          100: 'This YouTube video is unavailable or private.',
-          101: 'This video owner does not allow playback on other websites.',
-          150: 'This video owner does not allow playback on other websites.',
-          153: 'YouTube rejected the embed. Check the deployed site origin and referrer settings.',
-        };
-        toast.error(errorMessages[errorCode] || `YouTube playback failed (error ${errorCode}).`);
-        console.warn('YouTube playback error:', errorCode);
         const { queue } = get();
         if (queue.length > 1) {
           get().next();

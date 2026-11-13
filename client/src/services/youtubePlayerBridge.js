@@ -49,7 +49,6 @@ const createPlayer = (containerId) => {
         modestbranding: 1,
         rel: 0,
         playsinline: 1,
-        origin: window.location.origin,
       },
       events: {
         onReady: () => {
@@ -66,8 +65,9 @@ const createPlayer = (containerId) => {
         },
         onError: (event) => {
           console.warn('YouTube Player Event code:', event.data);
-          if (stateChangeCallback) {
-            stateChangeCallback(-1, ytPlayer, event.data);
+          // If video cannot be embedded (code 101 or 150), notify playerStore
+          if (stateChangeCallback && (event.data === 101 || event.data === 150)) {
+            stateChangeCallback(-1, ytPlayer);
           }
         },
       },
