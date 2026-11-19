@@ -16,8 +16,8 @@ const PUBLIC_INVIDIOUS_HOSTS = [
   'https://vid.priv.au',
 ];
 
-const BACKEND_TIMEOUT_MS = 12000;
-const FALLBACK_TIMEOUT_MS = 6000;
+const BACKEND_TIMEOUT_MS = 65000; // Render free tier can take 50s+ to cold-start
+const FALLBACK_TIMEOUT_MS = 8000;
 
 const fetchWithTimeout = async (url, timeoutMs) => {
   const controller = new AbortController();
