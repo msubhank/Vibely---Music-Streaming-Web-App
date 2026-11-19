@@ -10,6 +10,7 @@ import CreatePlaylistModal from './components/library/CreatePlaylistModal';
 import AddToPlaylistModal from './components/library/AddToPlaylistModal';
 import QueueDrawer from './components/layout/QueueDrawer';
 import MobileNav from './components/layout/MobileNav';
+import MobileHeader from './components/layout/MobileHeader';
 import YouTubeFloatingPlayer from './components/player/YouTubeFloatingPlayer';
 import Home from './pages/Home';
 import Search from './pages/Search';
@@ -28,6 +29,9 @@ function AppLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-bg text-white overflow-hidden">
+      {/* Mobile Top Header with Brand & Account/Logout */}
+      <MobileHeader />
+
       {/* Main layout: Sidebar + Content */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
