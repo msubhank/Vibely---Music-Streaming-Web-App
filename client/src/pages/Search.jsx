@@ -255,10 +255,13 @@ const Search = () => {
             </div>
           ) : searchError ? (
             <div className="py-16 text-center">
-              <p className="text-sm text-red-400">{searchError}</p>
-              <p className="text-xs text-muted mt-2">
-                Check the deployed frontend&apos;s VITE_API_URL setting and redeploy it.
-              </p>
+              <p className="text-sm text-red-400 mb-3">{searchError}</p>
+              <button
+                onClick={() => executeSearch(query, source)}
+                className="px-4 py-2 rounded-full bg-primary text-white text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+              >
+                ↺ Retry
+              </button>
             </div>
           ) : tab === 'tracks' || source === 'youtube' ? (
             tracks.length === 0 ? (

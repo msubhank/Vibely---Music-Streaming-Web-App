@@ -42,7 +42,7 @@ const Home = () => {
       }
     } catch (err) {
       console.error('Failed to load tracks:', err);
-      setError('Could not load tracks right now. Please try again or switch sources.');
+      setError(err.message || 'Could not load tracks right now. Please try again or switch sources.');
     } finally {
       setLoading(false);
     }
